@@ -10,8 +10,8 @@ export async function loadPackageJson(path: string): Promise<PackageJson | null>
   try {
     const content = readFileSync(path, 'utf8')
     return JSON.parse(content) as PackageJson
-  } catch (error) {
-    if (error.code === 'ENOENT') {
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return null
     }
     throw error
@@ -22,8 +22,8 @@ export async function loadLockFile(path: string): Promise<LockFile | null> {
   try {
     const content = readFileSync(path, 'utf8')
     return JSON.parse(content) as LockFile
-  } catch (error) {
-    if (error.code === 'ENOENT') {
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return null
     }
     throw error

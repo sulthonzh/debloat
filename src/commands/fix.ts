@@ -1,81 +1,71 @@
-import { Command } from 'commander'
-import { generateFixes } from '../core/fixes.js'
-import { applyFixes } from '../core/fix-apply.js'
+import { analyzeDependencies } from '../core/analysis.js'
+import { generateFixes, applyFixes } from '../core/fixes.js'
 import { loadPackageJson } from '../utils/package-loader.js'
-import { formatResults } from '../utils/formatter.js'
+import { formatResults, formatJsonOutput } from '../utils/formatter.js'
 
-const fixCommand = new Command()
-  .command('fix')
-  .description('Generate and apply fixes for dependency bloat')
-  .option('-p, --path <path>', 'Path to package.json (default: ./package.json)', './package.json')
-  .option('-l, --lockfile <path>', 'Path to package-lock.json (optional)', './package-lock.json')
-  .option('-a, --auto-apply', 'Automatically apply suggested fixes')
-  .option('-v, --verbose', 'Verbose output')
-  .option('-j, --json', 'Output results as JSON')
-  .option('--dry-run', 'Show what would be fixed without applying changes')
-  .action(async (options) => {
+type CliOpts = Record<string, string | boolean>
+
+export const fixCommand = {
+  name: 'fix' as const,
+  description: 'Generate and apply fixes for dependency bloat',
+  async run(opts: CliOpts) {
     try {
-      // Load package.json
-      const packageJson = await loadPackageJson(options.path)
+      const path = typeof opts.path === 'string' ? opts.path : './package.json'
+      const packageJson = await loadPackageJson(path)
       
       if (!packageJson) {
         console.error('Error: package.json not found at the specified path')
         process.exit(1)
       }
 
-      // Generate fixes
-      const fixes = await generateFixes(packageJson, {
-        lockfilePath: options.lockfile,
-        verbose: options.verbose
+      // Run analysis first to get issues/suggestions
+      const analysisResult = await analyzeDependencies(packageJson, {
+        lockfilePath: typeof opts.lockfile === 'string' ? opts.lockfile : './package-lock.json',
+        verbose: !!opts.verbose,
+        checks: {
+          functionalOverlap: !opts['skip-functional-overlap'],
+          builtInReplacements: !opts['skip-built-in-replacements'],
+          hallucination: !opts['skip-hallucination-detection']
+        }
       })
 
-      // Handle dry run
-      if (options.dryRun) {
-        const dryRunResults = {
-          ...fixes,
-          summary: {
-            ...fixes.summary,
-            message: 'DRY RUN: No changes applied'
-          }
-        }
-        
-        if (options.json) {
-          console.log(JSON.stringify(dryRunResults, null, 2))
+      // Generate fixes from analysis result
+      const fixes = await generateFixes(packageJson, analysisResult)
+
+      if (opts['dry-run']) {
+        if (opts.json) {
+          console.log(formatJsonOutput({ ...fixes, dryRun: true } as any))
         } else {
-          console.log(formatResults(dryRunResults, options.verbose))
+          console.log(formatResults(fixes, !!opts.verbose))
           console.log('\nDRY RUN: No changes were made to package.json')
         }
         return
       }
 
-      // Apply fixes if requested
-      if (options.autoApply) {
-        const applied = await applyFixes(packageJson, fixes, options.path)
-        
+      if (opts.autoApply || opts.a) {
+        const applied = await applyFixes(packageJson, fixes, path)
         if (applied) {
           console.log('✅ Successfully applied fixes to package.json')
-          if (!options.json) {
-            console.log(formatResults(fixes, options.verbose))
+          if (!opts.json) {
+            console.log(formatResults(fixes, !!opts.verbose))
           }
         } else {
           console.error('❌ Failed to apply fixes')
           process.exit(1)
         }
       } else {
-        // Show fixes without applying
-        if (options.json) {
-          console.log(JSON.stringify(fixes, null, 2))
+        if (opts.json) {
+          console.log(formatJsonOutput(fixes))
         } else {
           console.log('🔍 Suggested fixes:')
-          console.log(formatResults(fixes, options.verbose))
+          console.log(formatResults(fixes, !!opts.verbose))
           console.log('\nTo apply these fixes, use --auto-apply or run:')
           console.log('  debloat fix --auto-apply')
         }
       }
     } catch (error) {
-      console.error('Error during fix generation:', error.message)
+      console.error('Error during fix generation:', (error as Error).message)
       process.exit(1)
     }
-  })
-
-export { fixCommand }
+  }
+}

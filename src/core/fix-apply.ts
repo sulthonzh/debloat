@@ -47,7 +47,9 @@ async function applyCodePatch(patch: PatchFile): Promise<void> {
   for (const operation of patch.operations) {
     switch (operation.type) {
       case 'replace':
-        patchedContent = patchedContent.replace(operation.pattern, operation.replacement)
+        if (operation.pattern && operation.replacement !== undefined) {
+          patchedContent = patchedContent.replace(operation.pattern, operation.replacement)
+        }
         break
       case 'insert':
         const insertPos = operation.insertAt === 'beginning' ? 0 : patchedContent.length
@@ -56,7 +58,9 @@ async function applyCodePatch(patch: PatchFile): Promise<void> {
                         patchedContent.slice(insertPos)
         break
       case 'delete':
-        patchedContent = patchedContent.replace(operation.pattern, '')
+        if (operation.pattern) {
+          patchedContent = patchedContent.replace(operation.pattern, '')
+        }
         break
     }
   }

@@ -1,7 +1,6 @@
 import { DetectionResult } from '../../types/analysis.js'
 import { DependencyIssue, DependencyWarning } from '../../types/dependency-issues.js'
 import { AnalysisConfig } from '../../types/analysis.js'
-import { fetch } from 'undici'
 
 // Common package name variations and potential typos
 const COMMON_PACKAGES = [
@@ -15,18 +14,15 @@ const COMMON_PACKAGES = [
   'netlify', 'aws-sdk', 'google-cloud', 'azure', 'cloudinary',
   'sharp', 'imagemin', 'file-type', 'mime-types', 'multer', 'formidable',
   'cookie', 'cookie-parser', 'session', 'passport', 'bcrypt', 'jsonwebtoken',
-  'crypto', 'bcryptjs', 'jsonwebtoken', 'node-fetch', 'undici', 'ky',
+  'crypto', 'bcryptjs', 'node-fetch', 'undici', 'ky',
   'winston', 'pino', 'bunyan', 'log4js', 'debug', 'morgan'
 ]
 
 // Common package name patterns that indicate potential issues
 const SUSPICIOUS_PATTERNS = [
-  // Typosquatting patterns
-  { pattern: /(axios|lodash|react|vue)/gi, replacement: '$1', reason: 'Common typosquatting target' },
-  
   // Suspicious length packages (very short or very long)
-  { min: 2, max: 4, reason: 'Suspiciously short package name' },
-  { min: 30, reason: 'Suspiciously long package name' },
+  { maxLen: 2, reason: 'Suspiciously short package name' },
+  { minLen: 40, reason: 'Suspiciously long package name' },
   
   // Numbers in package names (sometimes indicate low quality)
   { pattern: /\d+/, reason: 'Package contains numbers - may be low quality' },
@@ -119,61 +115,78 @@ export async function detectHallucinations(
     }
   }
 
-  return { issues, warnings }
+  return { issues, warnings, suggestions: [] }
 }
 
-async function checkPackageExists(pkg: string, version: string): Promise<boolean> {
+/**
+ * Check if a package exists in the npm registry.
+ * Uses native fetch (Node.js 18+).
+ * If the network is unavailable, conservatively assumes the package exists.
+ */
+export async function checkPackageExists(pkg: string, version: string): Promise<boolean> {
   try {
-    // Use npm registry API to check if package exists
-    const response = await fetch(`https://registry.npmjs.org/${pkg}`)
+    // Add 3-second timeout to avoid hanging on network issues
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 3000)
+    const response = await fetch(`https://registry.npmjs.org/${pkg}`, {
+      signal: controller.signal
+    })
+    clearTimeout(timeout)
     
     if (response.status === 200) {
-      const data = await response.json()
+      const data = await response.json() as { versions?: Record<string, unknown> }
       
       // Check if specific version exists
-      if (version === 'latest' || data.versions[version]) {
+      if (version === 'latest' || data.versions?.[version]) {
         return true
       }
       
-      // Check if version range is valid
+      // Check if version range is valid (^ or ~)
       if (version.startsWith('^') || version.startsWith('~')) {
-        const operator = version.startsWith('^') ? '^' : '~'
         const baseVersion = version.slice(1).split('.')[0]
-        
-        // Check if any version matches the range
-        Object.keys(data.versions).forEach(v => {
+        const versions = Object.keys(data.versions || {})
+        // FIX: use for...of instead of forEach so we can actually return
+        for (const v of versions) {
           if (v.startsWith(baseVersion)) {
             return true
           }
-        })
+        }
       }
       
-      return false
+      // Version specified but not found in registry
+      // If version is a wildcard or range, package exists
+      if (version === '*' || version.includes('||') || version.includes(' > ')) {
+        return true
+      }
+      
+      // Package exists but version doesn't match — still count as exists
+      return true
     }
     
     return false
-  } catch (error) {
-    // If we can't check, be conservative and assume it exists
+  } catch {
+    // Network error — be conservative, assume it exists
     return true
   }
 }
 
-function checkSuspiciousPatterns(pkg: string): { reason: string } | null {
+/**
+ * Check if a package name matches suspicious patterns.
+ */
+export function checkSuspiciousPatterns(pkg: string): { reason: string } | null {
   for (const pattern of SUSPICIOUS_PATTERNS) {
-    if (pattern.pattern) {
-      if (pattern.pattern instanceof RegExp) {
-        if (pattern.pattern.test(pkg)) {
-          return { reason: pattern.reason }
-        }
+    if (pattern.pattern instanceof RegExp) {
+      if (pattern.pattern.test(pkg)) {
+        return { reason: pattern.reason }
       }
-    } else if (typeof pattern === 'object') {
-      const { min, max } = pattern as { min?: number; max?: number }
+    } else {
+      const { minLen, maxLen } = pattern as { minLen?: number; maxLen?: number; reason: string }
       
-      if (min && pkg.length < min) {
+      if (maxLen !== undefined && pkg.length <= maxLen) {
         return { reason: pattern.reason }
       }
       
-      if (max && pkg.length > max) {
+      if (minLen !== undefined && pkg.length >= minLen) {
         return { reason: pattern.reason }
       }
     }
@@ -182,10 +195,12 @@ function checkSuspiciousPatterns(pkg: string): { reason: string } | null {
   return null
 }
 
-function checkPotentialTypos(pkg: string): string | null {
+/**
+ * Check if a package name is a likely typo of a common package.
+ */
+export function checkPotentialTypos(pkg: string): string | null {
   // Common typos for popular packages
   const typoMap: Record<string, string[]> = {
-    'axois': ['axios'],
     'axois': ['axios'],
     'lodas': ['lodash'],
     'lodah': ['lodash'],
@@ -200,10 +215,6 @@ function checkPotentialTypos(pkg: string): string | null {
     'typesript': ['typescript'],
     'prettieer': ['prettier'],
     'eslintt': ['eslint'],
-    'babel-core': ['@babel/core'],
-    'webpack-dev-server': ['webpack-dev-server'],
-    'react-dom': ['react-dom'],
-    'react-router': ['react-router-dom']
   }
 
   // Check for exact matches in typo map
@@ -223,7 +234,10 @@ function checkPotentialTypos(pkg: string): string | null {
   return null
 }
 
-function levenshteinDistance(a: string, b: string): number {
+/**
+ * Compute Levenshtein edit distance between two strings.
+ */
+export function levenshteinDistance(a: string, b: string): number {
   if (a.length === 0) return b.length
   if (b.length === 0) return a.length
 
@@ -246,7 +260,9 @@ function levenshteinDistance(a: string, b: string): number {
   return matrix[b.length][a.length]
 }
 
-function estimatePackageSize(packageName: string): number {
-  // Default size estimate for unknown packages
-  return 50 // KB
+/**
+ * Estimate package size in KB (rough heuristic).
+ */
+export function estimatePackageSize(packageName: string): number {
+  return 50 // KB default
 }

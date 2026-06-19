@@ -5,42 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2026-06-19
+
+### Fixed
+- **TypeScript compilation errors**: Fixed all strict TypeScript errors preventing clean DTS generation
+- **BUILTIN_REPLACEMENTS type issue**: Added `Record<string, BuiltInReplacementInfo>` type annotation to resolve indexing errors on literal objects
+- **DetectionResult missing `suggestions`**: `hallucinations.ts` now returns empty `suggestions` array (required by type definition)
+- **Unknown type errors**: Fixed `catch` blocks in `package-loader.ts` using proper `error: unknown` type guard
+- **Suspicious patterns logic bug**: Fixed inverted check logic for `minLen`/`maxLen` in `checkSuspiciousPatterns` — packages were incorrectly flagged as "suspiciously short" when long
+- **forEach bug in hallucinations detection**: Replaced `forEach` with `for...of` loop to ensure early returns propagate correctly
+- **result.savings path error**: Fixed reference in `analysis.ts` from `result.savings` to `result.summary.savings` to match type definition
 
 ### Added
-- Initial version of debloat
-- AI dependency bloat detection
-- Functional overlap detection
-- Built-in replacement detection  
-- Hallucination detection
-- CLI interface with analyze, fix, and info commands
-- Auto-fix mode with safe suggestions
-- JSON output support
-- Verbose reporting
-- Comprehensive test suite
+- **Comprehensive test suite**: 26 tests covering CLI, detection logic, and package loader
+- **CHANGELOG.md**: Added version history documentation
+- **exports field**: Added clean ESM exports in package.json
+- **prepublishOnly script**: Ensures build runs before npm publish
 
-### Features
-- **Functional Overlap**: Detects packages doing the same job (e.g., moment + date-fns)
-- **Built-in Replacements**: Identifies packages replaceable by native APIs (e.g., axios → fetch)
-- **Hallucination Detection**: Flags non-existent packages and potential typosquats
-- **Auto-Fix**: Generate and apply fixes with one command
-- **Zero Dependencies**: CLI-only tool, runs anywhere
-- **Fast Analysis**: Parses package.json in milliseconds
-- **Smart Suggestions**: Provides safe replacement commands
-
-### CLI Commands
-- `debloat analyze` - Analyze package.json for bloat
-- `debloat fix --auto-apply` - Generate and apply fixes
-- `debloat info` - Show tool information
-- `debloat analyze --json` - JSON output
-- `debloat fix --dry-run` - Show what would be fixed
+### Changed
+- **Zero dependencies confirmed**: Removed all runtime dependencies (commander, undici) — CLI now uses custom zero-dep argument parser and native fetch API
 
 ## [1.0.0] - 2026-06-15
 
 ### Added
 - Initial release
-- Core detection engine
-- Three detection types
-- CLI interface
-- Comprehensive documentation
-- Test suite
+- Functional overlap detection (moment + date-fns, axios + node-fetch, etc.)
+- Built-in replacement detection (axios → fetch, lodash → native, etc.)
+- Hallucination detection (non-existent packages, typosquats, suspicious patterns)
+- Auto-fix mode with safe suggestions
+- CLI with analyze, fix, and info commands
+- JSON output for CI/CD integration
+- Verbose reporting mode
+- TypeScript with full type definitions

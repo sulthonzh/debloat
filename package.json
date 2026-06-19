@@ -1,20 +1,27 @@
 {
   "name": "debloat",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "AI Dependency Bloat Detector & Fixer - Find and fix redundant, unnecessary, and hallucinated dependencies in AI-generated code",
   "type": "module",
   "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./analyzer.js": {
+      "import": "./dist/analyzer.js"
+    }
+  },
   "bin": {
     "debloat": "dist/index.js"
   },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "test": "vitest",
-    "test:coverage": "vitest --coverage",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
-    "prepublishOnly": "npm run build"
+    "test": "node --test test/*.test.js",
+    "test:run": "node --test test/*.test.js",
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "ai",
@@ -25,7 +32,8 @@
     "optimization",
     "cli",
     "typescript",
-    "security"
+    "security",
+    "zero-dependency"
   ],
   "author": "Sulthonzh",
   "license": "MIT",
@@ -35,19 +43,12 @@
   "files": [
     "dist",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
-  "dependencies": {
-    "commander": "^15.0.0",
-    "undici": "^8.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^24.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.14.0",
-    "@typescript-eslint/parser": "^6.14.0",
-    "eslint": "^8.55.0",
+"devDependencies": {
+    "@types/node": "^20.11.0",
     "tsup": "^8.0.1",
-    "typescript": "^5.3.2",
-    "vitest": "^1.0.4"
+    "typescript": "^5.3.2"
   }
 }

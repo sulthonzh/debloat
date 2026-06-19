@@ -1,15 +1,18 @@
-import { Command } from 'commander'
 import { readFileSync } from 'fs'
-import { join } from 'path'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
 
-const infoCommand = new Command()
-  .command('info')
-  .description('Show information about debloat and its capabilities')
-  .option('--json', 'Output information as JSON')
-  .action(async (options) => {
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
+type CliOpts = Record<string, string | boolean>
+
+export const infoCommand = {
+  name: 'info' as const,
+  description: 'Show information about debloat and its capabilities',
+  async run(opts: CliOpts) {
     try {
-      // Load package.json for version and description
-      const packageJsonPath = join(import.meta.dirname, '../../package.json')
+      const packageJsonPath = join(__dirname, '../package.json')
       const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'))
 
       const info = {
@@ -19,9 +22,8 @@ const infoCommand = new Command()
         capabilities: [
           'Detect functional overlap between dependencies (e.g., moment + date-fns)',
           'Identify built-in replacements (e.g., axios → fetch, lodash → native)',
-          'Find hallucinated or slopsquatting dependencies',
+          'Find hallucinated or typosquatting dependencies',
           'Generate migration patches for safe replacements',
-          'AI attribution integration with agentblame',
           'Auto-fix mode with safe suggestions'
         ],
         detectionTypes: [
@@ -42,36 +44,27 @@ const infoCommand = new Command()
         ]
       }
 
-      if (options.json) {
+      if (opts.json) {
         console.log(JSON.stringify(info, null, 2))
       } else {
         console.log(`🔍 ${info.name} v${info.version}`)
         console.log(`${info.description}\n`)
         
         console.log('🎯 Capabilities:')
-        info.capabilities.forEach(cap => {
-          console.log(`  • ${cap}`)
-        })
+        info.capabilities.forEach(cap => console.log(`  • ${cap}`))
         
         console.log('\n📋 Detection Types:')
-        info.detectionTypes.forEach(type => {
-          console.log(`  • ${type}`)
-        })
+        info.detectionTypes.forEach(type => console.log(`  • ${type}`))
         
         console.log('\n💡 Usage:')
-        info.usage.forEach(use => {
-          console.log(`  ${use}`)
-        })
+        info.usage.forEach(use => console.log(`  ${use}`))
         
         console.log('\n📝 Examples:')
-        info.examples.forEach(ex => {
-          console.log(`  ${ex}`)
-        })
+        info.examples.forEach(ex => console.log(`  ${ex}`))
       }
     } catch (error) {
-      console.error('Error loading info:', error.message)
+      console.error('Error loading info:', (error as Error).message)
       process.exit(1)
     }
-  })
-
-export { infoCommand }
+  }
+}

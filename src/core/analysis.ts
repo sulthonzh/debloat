@@ -79,7 +79,7 @@ export async function analyzeDependencies(
     detectionPromises.push(
       detectHallucinations(dependencies, config).then(results => {
         result.issues.push(...results.issues)
-        result.warnings.push(...results.warnings)
+        if (results.warnings) result.warnings.push(...results.warnings)
         if (config.verbose && results.issues.length > 0) {
           console.log(`🔍 Found ${results.issues.length} hallucinated dependencies`)
         }
@@ -95,8 +95,8 @@ export async function analyzeDependencies(
   result.summary.suggestions = result.suggestions.length
   
   // Calculate potential savings
-  result.savings.dependencies = result.issues.length
-  result.savings.size = result.issues.reduce((total, issue) => {
+  result.summary.savings.dependencies = result.issues.length
+  result.summary.savings.size = result.issues.reduce((total, issue) => {
     return total + (issue.impact?.size || 0)
   }, 0)
 

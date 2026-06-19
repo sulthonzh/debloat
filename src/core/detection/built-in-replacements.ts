@@ -2,8 +2,16 @@ import { DetectionResult } from '../../types/analysis.js'
 import { DependencyIssue, DependencySuggestion, DependencyImpact } from '../../types/dependency-issues.js'
 import { AnalysisConfig } from '../../types/analysis.js'
 
+interface BuiltInReplacementInfo {
+  replacement: string
+  reason: string
+  commands: string[]
+  nodeVersion?: string
+  features?: string[]
+}
+
 // Built-in replacement mappings
-const BUILTIN_REPLACEMENTS = {
+const BUILTIN_REPLACEMENTS: Record<string, BuiltInReplacementInfo> = {
   'axios': {
     replacement: 'fetch',
     reason: 'Modern browsers and Node.js have native fetch API',

@@ -1,3 +1,5 @@
+import { PatchFile } from './patches.js'
+
 export interface IssueSeverity {
   level: 'low' | 'medium' | 'high' | 'critical'
   score: number // 1-10
@@ -32,6 +34,8 @@ export interface SuggestionAction {
   reason: string
   confidence: number // 0-1
   commands?: string[]
+  replacement?: string
+  patches?: PatchFile[]
 }
 
 export interface DependencySuggestion {
