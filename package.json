@@ -46,9 +46,17 @@
     "CHANGELOG.md",
     "LICENSE"
   ],
-"devDependencies": {
+  "devDependencies": {
     "@types/node": "^24.0.0",
     "tsup": "^8.0.1",
     "typescript": "^5.3.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sulthonzh/debloat"
+  },
+  "homepage": "https://github.com/sulthonzh/debloat#readme",
+  "bugs": {
+    "url": "https://github.com/sulthonzh/debloat/issues"
   }
 }
