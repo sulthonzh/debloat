@@ -49,8 +49,8 @@ export class DependencyUtils {
     const categories = {
       'framework': ['react', 'vue', 'angular', 'svelte', 'lit', 'preact', 'solid'],
       'library': ['lodash', 'axios', 'moment', 'date-fns', 'dayjs'],
-      'build': ['webpack', 'vite', 'rollup', 'babel', 'esbuild'],
       'testing': ['jest', 'mocha', 'cypress', 'playwright', 'vitest'],
+      'build': ['webpack', 'vite', 'rollup', 'babel', 'esbuild'],
       'linting': ['eslint', 'prettier', 'stylelint'],
       'types': ['typescript', '@types/node', '@types/react'],
       'database': ['mongoose', 'sequelize', 'prisma', 'firebase'],
