@@ -1,10 +1,6 @@
 import { readFileSync } from 'fs'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
+import { join } from 'path'
 import { PackageJson, LockFile } from '../types/package-json.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 
 export async function loadPackageJson(path: string): Promise<PackageJson | null> {
   try {

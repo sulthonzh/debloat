@@ -2,6 +2,7 @@ import { analyzeDependencies } from '../core/analysis.js'
 import { generateFixes, applyFixes } from '../core/fixes.js'
 import { loadPackageJson } from '../utils/package-loader.js'
 import { formatResults, formatJsonOutput } from '../utils/formatter.js'
+import type { AnalysisResult } from '../types/analysis.js'
 
 type CliOpts = Record<string, string | boolean>
 
@@ -34,7 +35,7 @@ export const fixCommand = {
 
       if (opts['dry-run']) {
         if (opts.json) {
-          console.log(formatJsonOutput({ ...fixes, dryRun: true } as any))
+          console.log(formatJsonOutput({ ...fixes, dryRun: true } as unknown as AnalysisResult))
         } else {
           console.log(formatResults(fixes, !!opts.verbose))
           console.log('\nDRY RUN: No changes were made to package.json')

@@ -1,9 +1,10 @@
 import { AnalysisResult } from '../types/analysis.js'
 import { applyFixes as applyPackageJsonFixes } from './fixes.js'
 import { PatchFile } from '../types/patches.js'
+import type { PackageJson } from '../types/package-json.js'
 
 export async function applyFixes(
-  packageJson: any,
+  packageJson: PackageJson,
   fixes: AnalysisResult,
   packageJsonPath: string
 ): Promise<boolean> {

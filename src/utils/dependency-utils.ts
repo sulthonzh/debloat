@@ -96,13 +96,13 @@ export class DependencyUtils {
     return sizeMap[pkgName] || 50 // default 50KB
   }
   
-  static isDeprecated(pkgName: string): boolean {
+  static isDeprecated(_pkgName: string): boolean {
     // In a real implementation, this would check npm registry
     // For now, return false
     return false
   }
   
-  static getLicense(pkgName: string): string {
+  static getLicense(_pkgName: string): string {
     // In a real implementation, this would check npm registry
     // For now, return MIT as default
     return 'MIT'

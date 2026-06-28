@@ -229,6 +229,79 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - Thanks to the VibeDoctor DEP-001 analysis and community research
 - Built with ❤️ for the JavaScript ecosystem
 
+## 💡 Real-World Examples
+
+### 1. Clean up an AI-generated CRUD app
+
+A team used Bolt.new to build a Next.js app. The result: 87 dependencies for a simple user auth + data grid.
+
+```bash
+$ debloat analyze
+📊 Total dependencies: 87
+❌ Issues found: 23
+💡 Potential savings: 2.3MB, 18 dependencies
+
+$ debloat fix --auto-apply
+✅ Applied 18 fixes. Dependencies: 87 → 69 (21% reduction)
+```
+
+### 2. Fix hallucinated dependencies in AI codebase
+
+Copilot suggested a non-existent package `@xyz/data-grid-v2`.
+
+```bash
+$ debloat analyze --json | jq '.issues[] | select(.type == "hallucination")'
+{
+  "type": "hallucination",
+  "package": "@xyz/data-grid-v2",
+  "reason": "Package not found in npm registry"
+}
+
+$ debloat fix --dry-run
+🔍 Suggested fixes:
+  - Remove @xyz/data-grid-v2: Package not found in npm registry
+```
+
+### 3. Pre-commit hook for CI/CD quality gate
+
+Prevent bloat from entering your codebase:
+
+```bash
+# .husky/pre-commit
+npx debloat analyze || {
+  echo "❌ Dependency bloat detected. Fix before committing."
+  exit 1
+}
+```
+
+### CI/CD Integration
+```bash
+# Check in CI without failing
+debloat analyze || true
+
+# Fail CI if bloat is found
+debloat analyze; exit $?
+```
+
+## 📊 Comparison with Alternatives
+
+| Feature | debloat | npm-check-updates | depcheck | npm ls | Bundlephobia |
+|---------|---------|-------------------|----------|---------|--------------|
+| **Detect functional overlap** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Suggest native replacements** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Detect hallucinated packages** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Auto-fix package.json** | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Generate code patches** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Zero runtime dependencies** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **TypeScript types included** | ✅ | ✅ | ✅ | N/A | ❌ |
+| **JSON output for CI** | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Bundle size reporting** | ❌ | ❌ | ❌ | ❌ | ✅ |
+
+**Why debloat?**
+- AI-generated code often includes redundant or hallucinated packages that traditional tools don't catch.
+- Native replacement suggestions (axios→fetch, moment→Intl) go beyond just checking for unused deps.
+- Code patch generation helps you update imports, not just package.json.
+
 ## 🚨 Security
 
 debloat only reads your package.json and package-lock.json files. It never modifies your code directly and only makes changes when explicitly requested with `--auto-apply`.

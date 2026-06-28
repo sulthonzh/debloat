@@ -1,10 +1,9 @@
-import { DependencyUtils } from '../utils/dependency-utils.js'
 import { AnalysisResult } from '../types/analysis.js'
-import { DependencySuggestion, SuggestionAction } from '../types/dependency-issues.js'
 import { generateFixCode } from './fix-codegen.js'
+import type { PackageJson } from '../types/package-json.js'
 
 export async function generateFixes(
-  packageJson: any,
+  packageJson: PackageJson,
   analysisResult: AnalysisResult
 ): Promise<AnalysisResult> {
   const fixes = { ...analysisResult }
@@ -22,7 +21,7 @@ export async function generateFixes(
 }
 
 export async function applyFixes(
-  packageJson: any,
+  packageJson: PackageJson,
   fixes: AnalysisResult,
   packageJsonPath: string
 ): Promise<boolean> {
@@ -83,8 +82,7 @@ export async function applyFixes(
     
     // Write the updated package.json
     const fs = await import('fs')
-    const path = await import('path')
-    
+
     fs.writeFileSync(
       packageJsonPath,
       JSON.stringify(updatedPackageJson, null, 2) + '\n'

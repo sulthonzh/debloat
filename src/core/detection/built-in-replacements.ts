@@ -1,5 +1,5 @@
 import { DetectionResult } from '../../types/analysis.js'
-import { DependencyIssue, DependencySuggestion, DependencyImpact } from '../../types/dependency-issues.js'
+import { DependencyIssue, DependencySuggestion } from '../../types/dependency-issues.js'
 import { AnalysisConfig } from '../../types/analysis.js'
 
 interface BuiltInReplacementInfo {
@@ -94,7 +94,7 @@ const BUILTIN_REPLACEMENTS: Record<string, BuiltInReplacementInfo> = {
 
 export async function detectBuiltInReplacements(
   dependencies: Record<string, string>,
-  config: AnalysisConfig
+  _config: AnalysisConfig
 ): Promise<DetectionResult> {
   const issues: DependencyIssue[] = []
   const suggestions: DependencySuggestion[] = []

@@ -1,11 +1,12 @@
 import { DependencySuggestion, SuggestionAction } from '../types/dependency-issues.js'
+import type { PackageJson } from '../types/package-json.js'
 
 export async function generateFixCode(
   suggestion: DependencySuggestion,
-  packageJson: any
-): Promise<{ commands: string[]; patches?: any[] }> {
+  packageJson: PackageJson
+): Promise<{ commands: string[]; patches?: Record<string, unknown>[] }> {
   const commands: string[] = []
-  const patches: any[] = []
+  const patches: Record<string, unknown>[] = []
   
   const action = suggestion.action
   const pkgName = action.package
@@ -53,8 +54,8 @@ export async function generateFixCode(
   return { commands, patches: patches.length > 0 ? patches : undefined }
 }
 
-async function generateCodePatches(action: SuggestionAction): Promise<any[]> {
-  const patches: any[] = []
+async function generateCodePatches(action: SuggestionAction): Promise<Record<string, unknown>[]> {
+  const patches: Record<string, unknown>[] = []
   
   switch (action.package) {
     case 'axios':

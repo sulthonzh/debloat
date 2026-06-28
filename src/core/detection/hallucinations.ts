@@ -36,7 +36,7 @@ const SUSPICIOUS_PATTERNS = [
 
 export async function detectHallucinations(
   dependencies: Record<string, string>,
-  config: AnalysisConfig
+  _config: AnalysisConfig
 ): Promise<DetectionResult> {
   const issues: DependencyIssue[] = []
   const warnings: DependencyWarning[] = []
@@ -263,6 +263,6 @@ export function levenshteinDistance(a: string, b: string): number {
 /**
  * Estimate package size in KB (rough heuristic).
  */
-export function estimatePackageSize(packageName: string): number {
+export function estimatePackageSize(_packageName: string): number {
   return 50 // KB default
 }

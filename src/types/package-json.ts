@@ -13,7 +13,7 @@ export interface PackageJson {
   workspaces?: string[] | object
   engines?: Record<string, string>
   private?: boolean
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export interface LockFile {
@@ -29,7 +29,7 @@ export interface LockFile {
       link?: boolean
       dev?: boolean
       optional?: boolean
-      [key: string]: any
+      [key: string]: unknown
     }
   }
   dependencies?: {
@@ -37,7 +37,7 @@ export interface LockFile {
       version: string
       resolved?: string
       integrity?: string
-      [key: string]: any
+      [key: string]: unknown
     }
   }
 }

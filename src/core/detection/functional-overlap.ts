@@ -1,6 +1,5 @@
-import { DependencyUtils } from '../../utils/dependency-utils.js'
 import { DetectionResult } from '../../types/analysis.js'
-import { DependencyIssue, DependencySuggestion, DependencyImpact } from '../../types/dependency-issues.js'
+import { DependencyIssue, DependencySuggestion } from '../../types/dependency-issues.js'
 import { AnalysisConfig } from '../../types/analysis.js'
 
 // Functional categorization of npm packages
@@ -54,7 +53,7 @@ const FUNCTIONAL_CATEGORIES = {
 
 export async function detectFunctionalOverlap(
   dependencies: Record<string, string>,
-  config: AnalysisConfig
+  _config: AnalysisConfig
 ): Promise<DetectionResult> {
   const issues: DependencyIssue[] = []
   const suggestions: DependencySuggestion[] = []

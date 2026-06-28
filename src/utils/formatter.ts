@@ -1,5 +1,5 @@
 import { AnalysisResult } from '../types/analysis.js'
-import { DependencyIssue, DependencySuggestion, DependencyWarning } from '../types/dependency-issues.js'
+import { DependencyIssue, DependencySuggestion } from '../types/dependency-issues.js'
 
 export function formatResults(results: AnalysisResult, verbose: boolean = false): string {
   const output: string[] = []
