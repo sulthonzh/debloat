@@ -46,3 +46,6 @@ temp/__pycache__/
 .venv/
 *.egg-info/
 .mypy_cache/
+
+# Python (standalone)
+__pycache__/
