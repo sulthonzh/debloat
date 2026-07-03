@@ -64,5 +64,8 @@
   "homepage": "https://github.com/sulthonzh/debloat#readme",
   "bugs": {
     "url": "https://github.com/sulthonzh/debloat/issues"
+  },
+  "overrides": {
+    "esbuild": "0.28.1"
   }
 }
