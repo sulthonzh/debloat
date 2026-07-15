@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { generateFixes, applyFixes } from '../src/core/fixes.js'
 import { generateFixCode } from '../src/core/fix-codegen.js'
 import type { AnalysisResult, DependencySuggestion } from '../src/types/analysis.js'
@@ -95,6 +95,31 @@ describe('generateFixCode', () => {
     const result = await generateFixCode(suggestion, { name: 't', version: '1.0.0' })
     expect(result.patches).toBeUndefined()
   })
+
+  it('should include --save-dev for remove when package is in devDependencies', async () => {
+    const suggestion = mockSuggestion({ type: 'remove', package: 'lodash', commands: [] })
+    const result = await generateFixCode(suggestion, { name: 't', version: '1.0.0', devDependencies: { lodash: '^4.0.0' } })
+    expect(result.commands).toContain('npm uninstall lodash --save-dev')
+  })
+
+  it('should include --save-dev for replace when package is in devDependencies', async () => {
+    const suggestion = mockSuggestion({ type: 'replace', package: 'axios', replacement: 'fetch', version: '^1.0.0', commands: [] })
+    const result = await generateFixCode(suggestion, { name: 't', version: '1.0.0', devDependencies: { axios: '^1.0.0' } })
+    expect(result.commands).toContain('npm uninstall axios --save-dev')
+    expect(result.commands.some(c => c.includes('npm install fetch') && c.includes('--save-dev'))).toBe(true)
+  })
+
+  it('should include --save-dev for upgrade when package is in devDependencies', async () => {
+    const suggestion = mockSuggestion({ type: 'upgrade', package: 'express', version: '^4.18.0', commands: [] })
+    const result = await generateFixCode(suggestion, { name: 't', version: '1.0.0', devDependencies: { express: '^4.0.0' } })
+    expect(result.commands).toContain('npm install express@^4.18.0 --save-dev')
+  })
+
+  it('should not include version in install command when version is missing', async () => {
+    const suggestion = mockSuggestion({ type: 'upgrade', package: 'express', version: undefined, commands: [] })
+    const result = await generateFixCode(suggestion, { name: 't', version: '1.0.0' })
+    expect(result.commands.some(c => c === 'npm install express')).toBe(true)
+  })
 })
 
 describe('generateFixes', () => {
@@ -190,5 +215,115 @@ describe('applyFixes', () => {
     const result = await applyFixes(pkg, mockResult([suggestion]), pkgPath)
 
     expect(result).toBe(true)
+  })
+
+  it('should replace a package from devDependencies', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'fix-test-'))
+    const pkgPath = join(dir, 'package.json')
+    const pkg: PackageJson = { name: 't', version: '1.0.0', devDependencies: { axios: '^1.0.0' } }
+    writeFileSync(pkgPath, JSON.stringify(pkg, null, 2))
+
+    const suggestion = mockSuggestion({ type: 'replace', package: 'axios', replacement: 'fetch', version: '^1.0.0', commands: [] })
+    const result = await applyFixes(pkg, mockResult([suggestion]), pkgPath)
+
+    expect(result).toBe(true)
+    const updated = JSON.parse(readFileSync(pkgPath, 'utf8'))
+    expect(updated.devDependencies).not.toHaveProperty('axios')
+    expect(updated.dependencies).toHaveProperty('fetch')
+  })
+
+  it('should upgrade a package in devDependencies', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'fix-test-'))
+    const pkgPath = join(dir, 'package.json')
+    const pkg: PackageJson = { name: 't', version: '1.0.0', devDependencies: { lodash: '^4.0.0' } }
+    writeFileSync(pkgPath, JSON.stringify(pkg, null, 2))
+
+    const suggestion = mockSuggestion({ type: 'upgrade', package: 'lodash', version: '^4.17.0', commands: [] })
+    const result = await applyFixes(pkg, mockResult([suggestion]), pkgPath)
+
+    expect(result).toBe(true)
+    const updated = JSON.parse(readFileSync(pkgPath, 'utf8'))
+    expect(updated.devDependencies.lodash).toBe('^4.17.0')
+  })
+
+  it('should downgrade a package in dependencies', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'fix-test-'))
+    const pkgPath = join(dir, 'package.json')
+    const pkg: PackageJson = { name: 't', version: '1.0.0', dependencies: { express: '^5.0.0' } }
+    writeFileSync(pkgPath, JSON.stringify(pkg, null, 2))
+
+    const suggestion = mockSuggestion({ type: 'downgrade', package: 'express', version: '^4.18.0', commands: [] })
+    const result = await applyFixes(pkg, mockResult([suggestion]), pkgPath)
+
+    expect(result).toBe(true)
+    const updated = JSON.parse(readFileSync(pkgPath, 'utf8'))
+    expect(updated.dependencies.express).toBe('^4.18.0')
+  })
+
+  it('should downgrade a package in devDependencies', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'fix-test-'))
+    const pkgPath = join(dir, 'package.json')
+    const pkg: PackageJson = { name: 't', version: '1.0.0', devDependencies: { jest: '^30.0.0' } }
+    writeFileSync(pkgPath, JSON.stringify(pkg, null, 2))
+
+    const suggestion = mockSuggestion({ type: 'downgrade', package: 'jest', version: '^29.0.0', commands: [] })
+    const result = await applyFixes(pkg, mockResult([suggestion]), pkgPath)
+
+    expect(result).toBe(true)
+    const updated = JSON.parse(readFileSync(pkgPath, 'utf8'))
+    expect(updated.devDependencies.jest).toBe('^29.0.0')
+  })
+
+  it('should return false on write error', async () => {
+    const suggestion = mockSuggestion({ type: 'remove', package: 'axios', commands: [] })
+    const result = await applyFixes(
+      { name: 't', version: '1.0.0', dependencies: { axios: '^1.0.0' } },
+      mockResult([suggestion]),
+      '/nonexistent/path/that/does/not/exist/package.json'
+    )
+    expect(result).toBe(false)
+  })
+
+  it('should replace a package that has no replacement specified', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'fix-test-'))
+    const pkgPath = join(dir, 'package.json')
+    const pkg: PackageJson = { name: 't', version: '1.0.0', dependencies: { moment: '^2.0.0' } }
+    writeFileSync(pkgPath, JSON.stringify(pkg, null, 2))
+
+    const suggestion = mockSuggestion({ type: 'replace', package: 'moment', replacement: undefined, version: undefined, commands: [] })
+    const result = await applyFixes(pkg, mockResult([suggestion]), pkgPath)
+
+    expect(result).toBe(true)
+    const updated = JSON.parse(readFileSync(pkgPath, 'utf8'))
+    expect(updated.dependencies).not.toHaveProperty('moment')
+  })
+
+  it('should create dependencies object when replacing into empty deps', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'fix-test-'))
+    const pkgPath = join(dir, 'package.json')
+    const pkg: PackageJson = { name: 't', version: '1.0.0', devDependencies: { axios: '^1.0.0' } }
+    writeFileSync(pkgPath, JSON.stringify(pkg, null, 2))
+
+    const suggestion = mockSuggestion({ type: 'replace', package: 'axios', replacement: 'fetch', version: '^1.0.0', commands: [] })
+    const result = await applyFixes(pkg, mockResult([suggestion]), pkgPath)
+
+    expect(result).toBe(true)
+    const updated = JSON.parse(readFileSync(pkgPath, 'utf8'))
+    expect(updated.dependencies).toHaveProperty('fetch', '^1.0.0')
+  })
+
+  it('should upgrade a package in both dependencies and devDependencies', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'fix-test-'))
+    const pkgPath = join(dir, 'package.json')
+    const pkg: PackageJson = { name: 't', version: '1.0.0', dependencies: { lodash: '^4.0.0' }, devDependencies: { lodash: '^4.0.0' } }
+    writeFileSync(pkgPath, JSON.stringify(pkg, null, 2))
+
+    const suggestion = mockSuggestion({ type: 'upgrade', package: 'lodash', version: undefined, commands: [] })
+    const result = await applyFixes(pkg, mockResult([suggestion]), pkgPath)
+
+    expect(result).toBe(true)
+    const updated = JSON.parse(readFileSync(pkgPath, 'utf8'))
+    expect(updated.dependencies.lodash).toBe('latest')
+    expect(updated.devDependencies.lodash).toBe('latest')
   })
 })

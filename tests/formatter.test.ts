@@ -119,6 +119,24 @@ describe('formatIssue', () => {
     const out = formatIssue(mockIssue({ category: 'security' }))
     expect(out).toContain('[security]')
   })
+
+  it('should format without version when missing', () => {
+    const out = formatIssue(mockIssue({ version: undefined }))
+    expect(out).toContain('axios')
+    expect(out).not.toContain('@undefined')
+  })
+
+  it('should format without package when missing', () => {
+    const out = formatIssue(mockIssue({ package: undefined }))
+    expect(out).not.toContain('undefined')
+  })
+
+  it('should show ✗ for falsy security and maintenance in verbose', () => {
+    const issue = mockIssue({ impact: { size: 50, security: false, maintenance: false, performance: false } })
+    const out = formatResults(mockResult({ issues: [issue] }), true)
+    expect(out).toContain('Security: ✗')
+    expect(out).toContain('Maintenance: ✗')
+  })
 })
 
 describe('formatSuggestion', () => {
@@ -133,6 +151,57 @@ describe('formatSuggestion', () => {
       action: { ...mockSuggestion().action, replacement: 'fetch' } as never
     }))
     expect(out).toContain('fetch')
+  })
+
+  it('should format without version when missing', () => {
+    const out = formatSuggestion(mockSuggestion({
+      action: { ...mockSuggestion().action, version: undefined } as never
+    }))
+    expect(out).not.toContain('undefined')
+  })
+})
+
+describe('formatResults verbose edge cases', () => {
+  it('should include evidence and impact in verbose mode', () => {
+    const out = formatResults(mockResult(), true)
+    expect(out).toContain('Evidence:')
+    expect(out).toContain('Impact:')
+    expect(out).toContain('Commands:')
+  })
+
+  it('should handle issue without evidence in verbose mode', () => {
+    const issue = mockIssue({ evidence: undefined })
+    const out = formatResults(mockResult({ issues: [issue] }), true)
+    expect(out).toContain('Severity:')
+    // Should not crash, should still contain the issue
+    expect(out).toContain('axios')
+  })
+
+  it('should handle issue without impact in verbose mode', () => {
+    const issue = mockIssue({ impact: undefined })
+    const out = formatResults(mockResult({ issues: [issue] }), true)
+    expect(out).toContain('Severity:')
+    expect(out).toContain('axios')
+  })
+
+  it('should handle suggestion without commands in verbose mode', () => {
+    const sugg = mockSuggestion({
+      action: { type: 'remove', package: 'lodash', reason: 'Unused', confidence: 0.5 } as never
+    })
+    const out = formatResults(mockResult({ suggestions: [sugg] }), true)
+    expect(out).toContain('Confidence: 50%')
+  })
+
+  it('should handle warning without suggestion', () => {
+    const out = formatResults(mockResult({
+      warnings: [{
+        type: 'package-not-found',
+        package: 'x',
+        version: '1.0.0',
+        message: 'Some warning without suggestion',
+      }]
+    }))
+    expect(out).toContain('Some warning')
   })
 })
 
@@ -162,5 +231,11 @@ describe('generateSummaryReport', () => {
   it('should include suggestions section', () => {
     const out = generateSummaryReport(mockResult())
     expect(out).toContain('## Suggestions')
+  })
+
+  it('should omit issues/suggestions sections when empty', () => {
+    const out = generateSummaryReport(mockResult({ issues: [], suggestions: [] }))
+    expect(out).not.toContain('## Issues')
+    expect(out).not.toContain('## Suggestions')
   })
 })
