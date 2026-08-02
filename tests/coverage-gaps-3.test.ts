@@ -1,7 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { generateFixes, applyFixes } from '../src/core/fixes.js'
 import { detectBuiltInReplacements } from '../src/core/detection/built-in-replacements.js'
-import { detectFunctionalOverlap } from '../src/core/detection/functional-overlap.js'
 import { checkPackageExists } from '../src/core/detection/hallucinations.js'
 import { DependencyUtils } from '../src/utils/dependency-utils.js'
 import { formatResults } from '../src/utils/formatter.js'
@@ -193,8 +192,7 @@ describe('dependency-utils.ts category creation branch', () => {
       },
     })
     // At least one category should have multiple entries (express + koa)
-    const multiCategories = Object.values(result).filter(arr => arr.length > 1)
-    // If categories group them together, we hit the false branch
+    // Verify categories are detected — express + koa in same web-framework category
     expect(Object.keys(result).length).toBeGreaterThan(0)
   })
 })

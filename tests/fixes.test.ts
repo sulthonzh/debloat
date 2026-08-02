@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { generateFixes, applyFixes } from '../src/core/fixes.js'
 import { generateFixCode } from '../src/core/fix-codegen.js'
 import type { AnalysisResult, DependencySuggestion } from '../src/types/analysis.js'

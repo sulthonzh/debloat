@@ -1,13 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { generateFixCode } from '../src/core/fix-codegen.js'
 import { generateFixes, applyFixes } from '../src/core/fixes.js'
 import { checkPackageExists, estimatePackageSize, checkSuspiciousPatterns } from '../src/core/detection/hallucinations.js'
 import { validatePackageJson, loadLockFile } from '../src/utils/package-loader.js'
-import { writeFileSync, mkdtempSync, rmSync } from 'fs'
+import { writeFileSync, mkdtempSync, rmSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import type { DependencySuggestion, SuggestionAction } from '../src/types/dependency-issues.js'
-import type { PackageJson } from '../src/types/package-json.js'
 import type { AnalysisResult } from '../src/types/analysis.js'
 
 function mockSuggestion(overrides: Partial<SuggestionAction> & { package: string }): DependencySuggestion {
@@ -124,7 +123,6 @@ describe('fixes.ts coverage gaps', () => {
         pkgPath,
       )
       expect(result).toBe(true)
-      const { readFileSync } = require('fs')
       const written = readFileSync(pkgPath, 'utf-8')
       const pkg = JSON.parse(written)
       expect(pkg.dependencies.express).toBe('^5.0.0')
@@ -146,7 +144,6 @@ describe('fixes.ts coverage gaps', () => {
         pkgPath,
       )
       expect(result).toBe(true)
-      const { readFileSync } = require('fs')
       const written = readFileSync(pkgPath, 'utf-8')
       const pkg = JSON.parse(written)
       expect(pkg.devDependencies.typescript).toBe('^5.0.0')
@@ -168,7 +165,6 @@ describe('fixes.ts coverage gaps', () => {
         pkgPath,
       )
       expect(result).toBe(true)
-      const { readFileSync } = require('fs')
       const written = readFileSync(pkgPath, 'utf-8')
       const pkg = JSON.parse(written)
       expect(pkg.dependencies.lodash).toBe('^4.0.0')
@@ -190,7 +186,6 @@ describe('fixes.ts coverage gaps', () => {
         pkgPath,
       )
       expect(result).toBe(true)
-      const { readFileSync } = require('fs')
       const written = readFileSync(pkgPath, 'utf-8')
       const pkg = JSON.parse(written)
       expect(pkg.devDependencies.react).toBe('^18.0.0')
