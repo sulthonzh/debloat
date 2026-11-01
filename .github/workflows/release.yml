@@ -16,7 +16,7 @@ permissions:
 jobs:
   release:
     name: Version Packages
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, svr1]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
